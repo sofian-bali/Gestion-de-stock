@@ -30,7 +30,7 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    final url = Uri.parse('http://192.168.1.154:3000/produits');
+    final url = Uri.parse('https://gestion-de-stock-q402.onrender.com/produits');
 
     try {
       final response = await http.post(

@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> chercherProduit(String code) async {
-    final url = Uri.parse('http://192.168.1.154:3000/produits/$code');
+    final url = Uri.parse('https://gestion-de-stock-q402.onrender.com/produits/$code');
 
     try {
       final response = await http.get(url);
@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> chargerMouvements(String code) async {
-    final url = Uri.parse('http://192.168.1.154:3000/produits/$code/mouvements');
+    final url = Uri.parse('https://gestion-de-stock-q402.onrender.com/produits/$code/mouvements');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> modifierStock(String type) async {
     final quantite = int.tryParse(quantiteController.text.trim()) ?? 1;
-    final url = Uri.parse('http://192.168.1.154:3000/produits/$codeBarres/$type');
+    final url = Uri.parse('https://gestion-de-stock-q402.onrender.com/produits/$codeBarres/$type');
     final response = await http.patch(
       url,
       headers: {'Content-Type': 'application/json'},
