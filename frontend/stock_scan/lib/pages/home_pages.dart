@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'add_product_page.dart';
@@ -27,20 +27,14 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> scannerCodeBarres() async {
     try {
-      final code = await FlutterBarcodeScanner.scanBarcode(
-        '#ff6666', // couleur du bouton annuler
-        'Annuler',
-        true, // flasher avec l’appareil photo
-        ScanMode.BARCODE,
-      );
-
-      if (code != '-1') {
+      var result = await BarcodeScanner.scan();
+      final code = result.rawContent;
+ 
+      if (code.isNotEmpty) {
         setState(() {
           codeBarres = code;
         });
-        if (kDebugMode) {
-          print("Code scanné : $code");
-        }
+        debugPrint("Code scanné : $code");
         chercherProduit(code);
       }
     } catch (e) {
@@ -51,7 +45,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> chercherProduit(String code) async {
-    final url = Uri.parse('http://localhost:3000/produits/$code');
+    final url = Uri.parse('http://192.168.1.154:3000/produits/$code');
 
     try {
       final response = await http.get(url);
@@ -79,7 +73,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> chargerMouvements(String code) async {
-    final url = Uri.parse('http://localhost:3000/produits/$code/mouvements');
+    final url = Uri.parse('http://192.168.1.154:3000/produits/$code/mouvements');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -95,7 +89,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> modifierStock(String type) async {
     final quantite = int.tryParse(quantiteController.text.trim()) ?? 1;
-    final url = Uri.parse('http://localhost:3000/produits/$codeBarres/$type');
+    final url = Uri.parse('http://192.168.1.154:3000/produits/$codeBarres/$type');
     final response = await http.patch(
       url,
       headers: {'Content-Type': 'application/json'},

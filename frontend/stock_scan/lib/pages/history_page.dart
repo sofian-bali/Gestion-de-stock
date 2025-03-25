@@ -19,7 +19,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> fetchHistorique() async {
-    final url = Uri.parse('http://localhost:3000/produits-mouvements');
+    final url = Uri.parse('http://192.168.1.154:3000/produits-mouvements');
 
     try {
       final response = await http.get(url);

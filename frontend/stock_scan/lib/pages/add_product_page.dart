@@ -30,7 +30,7 @@ class _AddProductPageState extends State<AddProductPage> {
       return;
     }
 
-    final url = Uri.parse('http://localhost:3000/produits');
+    final url = Uri.parse('http://192.168.1.154:3000/produits');
 
     try {
       final response = await http.post(
