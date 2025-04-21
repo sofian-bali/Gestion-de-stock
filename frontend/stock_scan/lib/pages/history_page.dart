@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+const String apiBaseUrl = 'https://gestion-de-stock-q402.onrender.com';
+
 class HistoryPage extends StatefulWidget {
   const HistoryPage({Key? key}) : super(key: key);
 
@@ -19,17 +21,18 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> fetchHistorique() async {
-    final url = Uri.parse('https://gestion-de-stock-q402.onrender.com/produits-mouvements');
+    final url = Uri.parse('$apiBaseUrl/produits-mouvements');
 
     try {
       final response = await http.get(url);
+      print("Réponse API: ${response.body}"); // Ajouté
       if (response.statusCode == 200) {
         setState(() {
           mouvements = jsonDecode(response.body);
         });
       }
     } catch (e) {
-      // Handle error silently
+      print("Erreur lors de la récupération de l'historique: $e"); // Ajouté
     }
   }
 
