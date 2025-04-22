@@ -7,6 +7,8 @@ import 'dart:io';
 import 'dart:async';
 import 'add_product_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'product_list_page.dart';
+import 'history_page.dart';
 
 const String apiBaseUrl = 'https://gestion-de-stock-q402.onrender.com';
 
@@ -142,17 +144,25 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             messageErreur = "Produit non trouvé dans la base de données";
           });
-          _showDialog('Produit introuvable', 'Ce produit n\'existe pas encore.');
+          debugPrint("🔄 Appel de _showDialog avec isProduitIntrouvable=true et codeProduit=$code");
+          _showDialog(
+            'Produit introuvable',
+            'Ce produit n\'existe pas encore dans la base de données.\n\nVoulez-vous l\'ajouter maintenant ?',
+            isProduitIntrouvable: true,
+            codeProduit: code,
+          );
         } else if (response.statusCode == 500) {
           debugPrint("⚠️ Erreur serveur 500: ${response.body}");
           setState(() {
             messageErreur = "Produit non trouvé - Voulez-vous l'ajouter ?";
           });
+          debugPrint("🔄 Appel de _showDialog avec isProduitIntrouvable=true et codeProduit=$code");
           _showDialog(
             'Produit introuvable',
             'Ce produit n\'existe pas encore dans la base de données.\n\n'
             'Voulez-vous l\'ajouter maintenant ?',
             isProduitIntrouvable: true,
+            codeProduit: code,
           );
         } else {
           debugPrint("⚠️ Erreur serveur: ${response.statusCode} - ${response.body}");
@@ -327,7 +337,8 @@ class _HomePageState extends State<HomePage> {
     testerConnexionServeur();
   }
 
-  void _showDialog(String titre, String message, {bool isProduitIntrouvable = false}) {
+  void _showDialog(String titre, String message, {bool isProduitIntrouvable = false, String? codeProduit}) {
+    debugPrint("📣 Affichage de la popup : $titre | Introuvable : $isProduitIntrouvable | Code : $codeProduit");
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -346,54 +357,63 @@ class _HomePageState extends State<HomePage> {
         ),
         title: Text(titre),
         content: Text(message),
-        actions: [
-          if (isProduitIntrouvable)
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: const Color(0xFF8D6E63),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              ),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                try {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AddProductPage(codeBarres: codeBarres),
+        actions: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (isProduitIntrouvable)
+                Expanded(
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: const Color(0xFF8D6E63),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
-                  );
-                  if (result == true) {
-                    // Attendre un peu avant de recharger le produit
-                    await Future.delayed(const Duration(seconds: 2));
-                    await chercherProduit(codeBarres);
-                  }
-                } catch (e) {
-                  debugPrint("❌ Erreur lors de l'ajout du produit: $e");
-                  _showDialog(
-                    'Erreur',
-                    'Une erreur est survenue lors de l\'ajout du produit.\n\n'
-                    'Détails : $e\n\n'
-                    'Veuillez réessayer ou contacter l\'administrateur.',
-                  );
-                }
-              },
-              child: const Text('Ajouter ce produit'),
-            ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: const Color(0xFF8D6E63),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                    onPressed: () async {
+                      debugPrint("🔄 Redirection vers la page d'ajout de produit avec le code: $codeProduit");
+                      Navigator.of(context).pop();
+                      try {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddProductPage(codeBarres: codeProduit ?? ''),
+                          ),
+                        );
+                        debugPrint("✅ Retour de la page d'ajout : $result");
+                        if (result == true) {
+                          await Future.delayed(const Duration(seconds: 2));
+                          await chercherProduit(codeProduit ?? '');
+                        }
+                      } catch (e) {
+                        debugPrint("❌ Erreur lors de l'ajout du produit: $e");
+                        _showDialog(
+                          'Erreur',
+                          'Une erreur est survenue lors de l\'ajout du produit.\n\n'
+                          'Détails : $e\n\n'
+                          'Veuillez réessayer ou contacter l\'administrateur.',
+                        );
+                      }
+                    },
+                    child: const Text('Ajouter ce produit'),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFF8D6E63),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            ],
           ),
         ],
       ),
@@ -426,262 +446,357 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFF8D6E63),
         foregroundColor: Colors.white,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Zone de débogage
-            Container(
-              margin: const EdgeInsets.all(8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isServerReachable ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isServerReachable ? Colors.green : Colors.red),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isServerReachable ? Icons.check_circle : Icons.error,
-                        color: isServerReachable ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        isServerReachable ? 'Serveur accessible' : 'Serveur inaccessible',
-                        style: TextStyle(
-                          color: isServerReachable ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Type de connexion : $typeConnexion',
-                      style: const TextStyle(color: Colors.black)),
-                  Text('Code scanné : $codeBarres',
-                      style: const TextStyle(color: Colors.black)),
-                  Text('URL appelée : $apiBaseUrl/produits/$codeBarres',
-                      style: const TextStyle(color: Colors.black, fontSize: 12)),
-                  if (messageErreur.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text('État : $messageErreur',
-                          style: const TextStyle(color: Colors.red, fontSize: 12)),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton(
-                        onPressed: testerConnexionServeur,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8D6E63),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        child: const Text('Tester la connexion'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Configuration réseau'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Type de connexion : $typeConnexion'),
-                                  const SizedBox(height: 16),
-                                  const Text('Conseils :'),
-                                  const SizedBox(height: 8),
-                                  const Text('• Vérifiez que votre WiFi est activé'),
-                                  const Text('• Assurez-vous d\'être connecté au bon réseau'),
-                                  const Text('• Essayez de redémarrer votre routeur'),
-                                  const Text('• Vérifiez les paramètres de proxy'),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8D6E63),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        child: const Text('Aide réseau'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (nomProduit.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Color(0xFFECEBE4),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('🧴 Parfum : $nomProduit',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4E342E))),
-                      if (quantiteProduit != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('📦 Stock : $quantiteProduit',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
-                        ),
-                      if (genre.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('🧑‍🤝‍🧑 Genre : ${genre.join(', ')}',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
-                        ),
-                      if (noteTete.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
-                          child: Text('🍋 Notes de tête : ${noteTete.join(', ')}',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
-                        ),
-                      if (noteCoeur.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('🌸 Notes de cœur : ${noteCoeur.join(', ')}',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
-                        ),
-                      if (noteFond.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('🌿 Notes de fond : ${noteFond.join(', ')}',
-                              style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
-                        ),
-                      if (dupe != null && dupe!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
-                          child: Text('🧪 Dupe : $dupe',
-                              style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Color(0xFF4E342E))),
-                        ),
-                    ],
-                  ),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Zone de débogage
+              Container(
+                margin: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isServerReachable ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isServerReachable ? Colors.green : Colors.red),
                 ),
-              ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: TextField(
-                controller: quantiteController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Quantité à modifier',
-                  labelStyle: const TextStyle(color: Color(0xFF4E342E)),
-                  filled: true,
-                  fillColor: const Color(0xFFECEBE4),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                style: const TextStyle(color: Color(0xFF4E342E)),
-              ),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: scannerCodeBarres,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBCAAA4),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: const Text('Scanner un produit'),
-            ),
-            if (codeBarres != 'Aucun code scanné')
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => modifierStock('ajouter'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBCAAA4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text('➕ Ajouter au stock'),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () => modifierStock('retirer'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBCAAA4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text('➖ Retirer du stock'),
-                  ),
-                ],
-              ),
-            if (mouvements.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 24.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Historique des mouvements',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+                    Row(
+                      children: [
+                        Icon(
+                          isServerReachable ? Icons.check_circle : Icons.error,
+                          color: isServerReachable ? Colors.green : Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isServerReachable ? 'Serveur accessible' : 'Serveur inaccessible',
+                          style: TextStyle(
+                            color: isServerReachable ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      height: 150,
-                      child: ListView.builder(
-                        itemCount: mouvements.length,
-                        itemBuilder: (context, index) {
-                          final m = mouvements[index];
-                          final date = DateTime.parse(m['date_mouvement']).toLocal();
-                          final dateStr = "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
-                          return ListTile(
-                            title: Text("${m['type']} - ${m['quantite']}",
-                                style: const TextStyle(color: Color(0xFF4E342E))),
-                            subtitle: Text(dateStr,
-                                style: const TextStyle(color: Color(0xFF8D6E63))),
-                          );
-                        },
+                    Text('Type de connexion : $typeConnexion',
+                        style: const TextStyle(color: Colors.black)),
+                    Text('Code scanné : $codeBarres',
+                        style: const TextStyle(color: Colors.black)),
+                    Text('URL appelée : $apiBaseUrl/produits/$codeBarres',
+                        style: const TextStyle(color: Colors.black, fontSize: 12)),
+                    if (messageErreur.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text('État : $messageErreur',
+                            style: const TextStyle(color: Colors.red, fontSize: 12)),
                       ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: testerConnexionServeur,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8D6E63),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Tester la connexion'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Configuration réseau'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('Type de connexion : $typeConnexion'),
+                                    const SizedBox(height: 16),
+                                    const Text('Conseils :'),
+                                    const SizedBox(height: 8),
+                                    const Text('• Vérifiez que votre WiFi est activé'),
+                                    const Text('• Assurez-vous d\'être connecté au bon réseau'),
+                                    const Text('• Essayez de redémarrer votre routeur'),
+                                    const Text('• Vérifiez les paramètres de proxy'),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8D6E63),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text('Aide réseau'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/history');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF8D6E63),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              if (nomProduit.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFFECEBE4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('🧴 Parfum : $nomProduit',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4E342E))),
+                        if (quantiteProduit != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('📦 Stock : $quantiteProduit',
+                                style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
+                          ),
+                        if (genre.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('🧑‍🤝‍🧑 Genre : ${genre.join(', ')}',
+                                style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
+                          ),
+                        if (noteTete.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12.0),
+                            child: Text('🍋 Notes de tête : ${noteTete.join(', ')}',
+                                style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
+                          ),
+                        if (noteCoeur.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('🌸 Notes de cœur : ${noteCoeur.join(', ')}',
+                                style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
+                          ),
+                        if (noteFond.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('🌿 Notes de fond : ${noteFond.join(', ')}',
+                                style: const TextStyle(fontSize: 16, color: Color(0xFF4E342E))),
+                          ),
+                        if (dupe != null && dupe!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12.0),
+                            child: Text('🧪 Dupe : $dupe',
+                                style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Color(0xFF4E342E))),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: TextField(
+                  controller: quantiteController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Quantité à modifier',
+                    labelStyle: const TextStyle(color: Color(0xFF4E342E)),
+                    filled: true,
+                    fillColor: const Color(0xFFECEBE4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  style: const TextStyle(color: Color(0xFF4E342E)),
+                ),
               ),
-              child: const Text('Voir l\'historique global'),
-            ),
-          ],
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: scannerCodeBarres,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBCAAA4),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Scanner un produit'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddProductPage(codeBarres: ''),
+                          ),
+                        );
+                        if (result == true) {
+                          await Future.delayed(const Duration(seconds: 2));
+                          setState(() {
+                            codeBarres = 'Aucun code scanné';
+                            nomProduit = '';
+                            quantiteProduit = null;
+                            genre = [];
+                            noteTete = [];
+                            noteCoeur = [];
+                            noteFond = [];
+                            dupe = null;
+                            mouvements = [];
+                          });
+                        }
+                      } catch (e) {
+                        debugPrint("❌ Erreur lors de l'ajout du produit: $e");
+                        _showDialog(
+                          'Erreur',
+                          'Une erreur est survenue lors de l\'ajout du produit.\n\n'
+                          'Détails : $e\n\n'
+                          'Veuillez réessayer ou contacter l\'administrateur.',
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8D6E63),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('➕ Ajouter un produit'),
+                  ),
+                  if (messageErreur.contains("Produit non trouvé"))
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          try {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AddProductPage(codeBarres: codeBarres),
+                              ),
+                            );
+                            if (result == true) {
+                              await Future.delayed(const Duration(seconds: 2));
+                              await chercherProduit(codeBarres);
+                            }
+                          } catch (e) {
+                            debugPrint("❌ Erreur lors de l'ajout du produit: $e");
+                            _showDialog(
+                              'Erreur',
+                              'Une erreur est survenue lors de l\'ajout du produit.\n\n'
+                              'Détails : $e\n\n'
+                              'Veuillez réessayer ou contacter l\'administrateur.',
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8D6E63),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text('Ajouter un nouveau produit'),
+                      ),
+                    ),
+                ],
+              ),
+              if (codeBarres != 'Aucun code scanné')
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => modifierStock('ajouter'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBCAAA4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('➕ Ajouter au stock'),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () => modifierStock('retirer'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBCAAA4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('➖ Retirer du stock'),
+                    ),
+                  ],
+                  
+                ),
+                const SizedBox(height: 40),
+
+              if (codeBarres != 'Aucun code scanné')
+                const SizedBox(height: 30),
+              if (mouvements.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 24.0),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Historique des mouvements',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 150,
+                        child: ListView.builder(
+                          itemCount: mouvements.length,
+                          itemBuilder: (context, index) {
+                            final m = mouvements[index];
+                            final date = DateTime.parse(m['date_mouvement']).toLocal();
+                            final dateStr = "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+                            return ListTile(
+                              title: Text("${m['type']} - ${m['quantite']}",
+                                  style: const TextStyle(color: Color(0xFF4E342E))),
+                              subtitle: Text(dateStr,
+                                  style: const TextStyle(color: Color(0xFF8D6E63))),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Always add spacing before the global history button/navbar
+              const SizedBox(height: 40),
+
+              // Button for 'Voir l'historique global'
+              ElevatedButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => HistoryPage()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8D6E63),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text("Voir l'historique global"),
+              ),
+            ],
+          ),
         ),
       ),
     );

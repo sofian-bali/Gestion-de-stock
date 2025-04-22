@@ -49,6 +49,41 @@ app.listen(PORT, () => {
   console.log(`Serveur lancé sur le port ${PORT}`);
 });
 
+// Obtenir tous les produits
+app.get("/produits", async (req, res) => {
+  try {
+    const produits = await prisma.produit.findMany();
+    res.json(produits);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erreur lors de la récupération des produits" });
+  }
+});
+
+// Rechercher des produits par nom ou code-barres
+app.get("/produits/recherche", async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ error: "Paramètre 'query' manquant" });
+  }
+
+  try {
+    const produits = await prisma.produit.findMany({
+      where: {
+        OR: [
+          { nom: { contains: query, mode: "insensitive" } },
+          { code_barres: { contains: query } }
+        ]
+      }
+    });
+    res.json(produits);
+  } catch (error) {
+    console.error("Erreur de recherche :", error);
+    res.status(500).json({ error: "Erreur lors de la recherche" });
+  }
+});
+
 // Obtenir un produit par code-barres
 app.get("/produits/:code_barres", async (req, res) => {
   const { code_barres } = req.params;

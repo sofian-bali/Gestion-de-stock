@@ -3,29 +3,39 @@ PODS:
     - Flutter
     - MTBBarcodeScanner
     - SwiftProtobuf
+  - connectivity_plus (0.0.1):
+    - Flutter
+    - ReachabilitySwift
   - Flutter (1.0.0)
   - MTBBarcodeScanner (5.0.11)
+  - ReachabilitySwift (5.2.4)
   - SwiftProtobuf (1.29.0)
 
 DEPENDENCIES:
   - barcode_scan2 (from `.symlinks/plugins/barcode_scan2/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - Flutter (from `Flutter`)
 
 SPEC REPOS:
   trunk:
     - MTBBarcodeScanner
+    - ReachabilitySwift
     - SwiftProtobuf
 
 EXTERNAL SOURCES:
   barcode_scan2:
     :path: ".symlinks/plugins/barcode_scan2/ios"
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   Flutter:
     :path: Flutter
 
 SPEC CHECKSUMS:
   barcode_scan2: 0af2bb63c81b4565aab6cd78278e4c0fa136dbb0
+  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
+  ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
   SwiftProtobuf: b7aa08087e2ab6d162862d143020091254095f69
 
 PODFILE CHECKSUM: e9c197b3e39aa1c5c92e8b298cf50e164d6c3058
