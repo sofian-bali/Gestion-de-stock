@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
+import 'product_detail_page.dart';
 
 const String apiBaseUrl = 'https://gestion-de-stock-q402.onrender.com';
 
@@ -257,8 +258,11 @@ class _ProductListPageState extends State<ProductListPage> {
                         ],
                       ),
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Page de détails à venir")),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailPage(produit: produit),
+                          ),
                         );
                       },
                     ),
@@ -270,4 +274,4 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
     );
   }
-} 
+}

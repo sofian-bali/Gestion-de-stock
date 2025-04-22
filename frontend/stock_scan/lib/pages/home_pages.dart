@@ -547,6 +547,64 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
+              // Always show scanner/add buttons row here (moved up)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: scannerCodeBarres,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBCAAA4),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Scanner un produit'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddProductPage(codeBarres: ''),
+                          ),
+                        );
+                        if (result == true) {
+                          await Future.delayed(const Duration(seconds: 2));
+                          setState(() {
+                            codeBarres = 'Aucun code scanné';
+                            nomProduit = '';
+                            quantiteProduit = null;
+                            genre = [];
+                            noteTete = [];
+                            noteCoeur = [];
+                            noteFond = [];
+                            dupe = null;
+                            mouvements = [];
+                          });
+                        }
+                      } catch (e) {
+                        debugPrint("❌ Erreur lors de l'ajout du produit: $e");
+                        _showDialog(
+                          'Erreur',
+                          'Une erreur est survenue lors de l\'ajout du produit.\n\n'
+                          'Détails : $e\n\n'
+                          'Veuillez réessayer ou contacter l\'administrateur.',
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8D6E63),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('➕ Ajouter un produit'),
+                  ),
+                ],
+              ),
               if (nomProduit.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -622,98 +680,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: scannerCodeBarres,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFBCAAA4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text('Scanner un produit'),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AddProductPage(codeBarres: ''),
-                          ),
-                        );
-                        if (result == true) {
-                          await Future.delayed(const Duration(seconds: 2));
-                          setState(() {
-                            codeBarres = 'Aucun code scanné';
-                            nomProduit = '';
-                            quantiteProduit = null;
-                            genre = [];
-                            noteTete = [];
-                            noteCoeur = [];
-                            noteFond = [];
-                            dupe = null;
-                            mouvements = [];
-                          });
-                        }
-                      } catch (e) {
-                        debugPrint("❌ Erreur lors de l'ajout du produit: $e");
-                        _showDialog(
-                          'Erreur',
-                          'Une erreur est survenue lors de l\'ajout du produit.\n\n'
-                          'Détails : $e\n\n'
-                          'Veuillez réessayer ou contacter l\'administrateur.',
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8D6E63),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text('➕ Ajouter un produit'),
-                  ),
-                  if (messageErreur.contains("Produit non trouvé"))
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AddProductPage(codeBarres: codeBarres),
-                              ),
-                            );
-                            if (result == true) {
-                              await Future.delayed(const Duration(seconds: 2));
-                              await chercherProduit(codeBarres);
-                            }
-                          } catch (e) {
-                            debugPrint("❌ Erreur lors de l'ajout du produit: $e");
-                            _showDialog(
-                              'Erreur',
-                              'Une erreur est survenue lors de l\'ajout du produit.\n\n'
-                              'Détails : $e\n\n'
-                              'Veuillez réessayer ou contacter l\'administrateur.',
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8D6E63),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        child: const Text('Ajouter un nouveau produit'),
-                      ),
-                    ),
-                ],
-              ),
               if (codeBarres != 'Aucun code scanné')
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -740,12 +706,8 @@ class _HomePageState extends State<HomePage> {
                       child: const Text('➖ Retirer du stock'),
                     ),
                   ],
-                  
                 ),
-                const SizedBox(height: 40),
-
-              if (codeBarres != 'Aucun code scanné')
-                const SizedBox(height: 30),
+              const SizedBox(height: 30),
               if (mouvements.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24.0),
@@ -776,24 +738,25 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-              // Always add spacing before the global history button/navbar
-              const SizedBox(height: 40),
-
-              // Button for 'Voir l'historique global'
-              ElevatedButton(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => HistoryPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8D6E63),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              const SizedBox(height: 30),
+              // Always show the global history button
+              Visibility(
+                visible: true,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => HistoryPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8D6E63),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text("Voir l'historique global"),
                 ),
-                child: const Text("Voir l'historique global"),
               ),
             ],
           ),
